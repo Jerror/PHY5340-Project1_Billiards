@@ -63,5 +63,5 @@ class UnitCircleBoundary(BilliardBoundary_abstract):
         This method searches in a specified interval, so I can exclude s0."""
         x0 = self.coords_cart(s0)
         return opt.brentq(self._linear_intersect_function(x0, v),
-                          (s0 + 0.01) % (2*np.pi), (s0 - 0.01) % (2*np.pi))
+                          s0 + 0.01, s0 + 2*np.pi - 0.01) % (2*np.pi)
 
