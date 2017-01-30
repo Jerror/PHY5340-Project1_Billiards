@@ -55,7 +55,8 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
         raise NotImplementedError('')
 
     def linear_intersect_cart(self, x0, v):
-        """Using Halley's parabolic root finder"""
+        """If fprime2 is not none, uses Halley's parabolic root finder.
+        Otherwise, uses the Newton-Raphson method."""
         return opt.newton(self._linear_intersect_function(x0, v), np.pi,
                           fprime=self._linear_inter_func_derivative(v),
                           fprime2=self._linear_inter_func_d2(v))
@@ -83,4 +84,32 @@ class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
 
     def _linear_inter_func_d2(self, v):
         return lambda s:np.dot(-self.coords_cart(s), np.array([v[1], -v[0]]))
+
+
+class BBoundary(ContinuousDifferentiableBoundary_abstract):
+    """Shape defined by r(s) = 1 + a*cos(c*s) + b*sin(d*s)"""
+
+    def __init__(o, a, b, c, d):
+        super(BBoundary, o).__init__(2*np.pi)
+        o.a = a
+        o.b = b
+        o.c = c
+        o.d = d
+
+    def coord_polar(o, s):
+        return 1 + o.a * np.cos(o.c * s) + o.b * np.sin(o.d * s)
+
+    def coords_cart(o, s):
+        return o.coord_polar(s) * np.array([np.cos(s), np.sin(s)])
+
+    def derivative_polar(o, s):
+        return -o.a*o.c * np.sin(o.c * s) + o.b*o.d * np.cos(o.d * s)
+
+    def tangent_cart(o, s):
+        return (o.derivative_polar(s) * np.array([np.cos(s), np.sin(s)])
+                + o.coord_polar(s) * np.array([-np.sin(s), np.cos(s)]))
+
+    def _linear_inter_func_d2(o, v):
+        """Not worthwhile to use higher order solver for this boundary."""
+        return None
 
