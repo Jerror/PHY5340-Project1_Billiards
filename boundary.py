@@ -44,9 +44,10 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
     """Billiard methods for 1D continuous differentiable convex boundaries."""
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, domain):
+    def __init__(self, domain, tol=2E-12):
         # domain is the period of the parameter (assumed cyclic, 0 origin)
         self.domain = domain
+        self.tol = tol
 
     @abc.abstractmethod
     def _linear_inter_func_d2(self, v):
@@ -59,15 +60,20 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
         Otherwise, uses the Newton-Raphson method."""
         return opt.newton(self._linear_intersect_function(x0, v), np.pi,
                           fprime=self._linear_inter_func_derivative(v),
-                          fprime2=self._linear_inter_func_d2(v))
+                          fprime2=self._linear_inter_func_d2(v),
+                          tol=self.tol)
 
     def linear_intersect_param(self, s0, v):
         """Using Brent's method with quadratic interpolation.
         This method searches in a specified interval, so I can exclude s0."""
         x0 = self.coords_cart(s0)
-        s = opt.brentq(self._linear_intersect_function(x0, v),
-                       s0 + 0.001*self.domain, s0 + 0.999*self.domain)
-        return s % self.domain
+        s, info = opt.brentq(self._linear_intersect_function(x0, v),
+                             s0 + 0.001*self.domain, s0 + 0.999*self.domain,
+                             xtol=self.tol, full_output=True)
+        if info.converged:
+            return s % self.domain
+        else:
+            raise RuntimeError(repr(info))
 
 
 class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
