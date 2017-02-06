@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import rootfinding as rf
 from boundary import *
 
-# bdy = UnitCircleBoundary()
-bdy = BBoundary(0.16, 0.1, 2.0, 1.0)
+# bdy = UnitCircleBoundary(rootfind_open=rf.newton, rootfind_bracketing=rf.bisect)
+bdy = BeanBoundary(0.16, 0.1, 2.0, 1.0)
 x0 = np.array([0.6, 0.2])
 theta = 0.1
 vel = np.array([np.cos(theta), np.sin(theta)])

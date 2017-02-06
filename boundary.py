@@ -1,4 +1,5 @@
 """Classes of 1D convex boundaries providing methods for billiard sims."""
+from __future__ import division
 import abc
 import numpy as np
 import scipy.optimize as opt
@@ -44,10 +45,13 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
     """Billiard methods for 1D continuous differentiable convex boundaries."""
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, domain, tol=2E-12):
+    def __init__(self, domain, tol=2E-12,
+                 rootfind_open=opt.newton, rootfind_bracketing=opt.brentq):
         # domain is the period of the parameter (assumed cyclic, 0 origin)
         self.domain = domain
         self.tol = tol
+        self.rf_open = rootfind_open
+        self.rf_bracketing = rootfind_bracketing
 
     @abc.abstractmethod
     def _linear_inter_func_d2(self, v):
@@ -58,18 +62,20 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
     def linear_intersect_cart(self, x0, v):
         """If fprime2 is not none, uses Halley's parabolic root finder.
         Otherwise, uses the Newton-Raphson method."""
-        return opt.newton(self._linear_intersect_function(x0, v), np.pi,
-                          fprime=self._linear_inter_func_derivative(v),
-                          fprime2=self._linear_inter_func_d2(v),
-                          tol=self.tol)
+        return self.rf_open(self._linear_intersect_function(x0, v),
+                            self.domain/2,
+                            fprime=self._linear_inter_func_derivative(v),
+                            fprime2=self._linear_inter_func_d2(v),
+                            tol=self.tol)
 
     def linear_intersect_param(self, s0, v):
         """Using Brent's method with quadratic interpolation.
         This method searches in a specified interval, so I can exclude s0."""
         x0 = self.coords_cart(s0)
-        s, info = opt.brentq(self._linear_intersect_function(x0, v),
-                             s0 + 0.001*self.domain, s0 + 0.999*self.domain,
-                             xtol=self.tol, full_output=True)
+        s, info = self.rf_bracketing(self._linear_intersect_function(x0, v),
+                                     s0 + 0.001*self.domain,
+                                     s0 + 0.999*self.domain,
+                                     xtol=self.tol, full_output=True)
         if info.converged:
             return s % self.domain
         else:
@@ -79,8 +85,8 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
 class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
     """Circular boundary of unit radius parameterized by angle."""
 
-    def __init__(self):
-        super(UnitCircleBoundary, self).__init__(2*np.pi)
+    def __init__(self, **kwargs):
+        super(UnitCircleBoundary, self).__init__(2*np.pi, **kwargs)
 
     def coords_cart(self, s):
         return np.array([np.cos(s), np.sin(s)])
@@ -92,11 +98,11 @@ class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
         return lambda s:np.dot(-self.coords_cart(s), np.array([v[1], -v[0]]))
 
 
-class BBoundary(ContinuousDifferentiableBoundary_abstract):
+class BeanBoundary(ContinuousDifferentiableBoundary_abstract):
     """Shape defined by r(s) = 1 + a*cos(c*s) + b*sin(d*s)"""
 
-    def __init__(o, a, b, c, d):
-        super(BBoundary, o).__init__(2*np.pi)
+    def __init__(o, a, b, c, d, **kwargs):
+        super(BeanBoundary, o).__init__(2*np.pi, **kwargs)
         o.a = a
         o.b = b
         o.c = c
