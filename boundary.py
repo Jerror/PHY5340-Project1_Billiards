@@ -92,7 +92,7 @@ class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
         return np.array([np.cos(s), np.sin(s)])
 
     def tangent_cart(self, s):
-        return np.array([-np.sin(s), np.cos(s)])
+        return np.array([-np.sin(s), np.cos(s)])  # already normalized
 
     def _linear_inter_func_d2(self, v):
         return lambda s:np.dot(-self.coords_cart(s), np.array([v[1], -v[0]]))
@@ -118,8 +118,9 @@ class BeanBoundary(ContinuousDifferentiableBoundary_abstract):
         return -o.a*o.c * np.sin(o.c * s) + o.b*o.d * np.cos(o.d * s)
 
     def tangent_cart(o, s):
-        return (o.derivative_polar(s) * np.array([np.cos(s), np.sin(s)])
-                + o.coord_polar(s) * np.array([-np.sin(s), np.cos(s)]))
+        tan = (o.derivative_polar(s) * np.array([np.cos(s), np.sin(s)])
+               + o.coord_polar(s) * np.array([-np.sin(s), np.cos(s)]))
+        return tan / np.linalg.norm(tan)
 
     def _linear_inter_func_d2(o, v):
         """Not worthwhile to use higher order solver for this boundary."""
