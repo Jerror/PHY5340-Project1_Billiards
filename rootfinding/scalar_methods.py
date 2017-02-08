@@ -17,8 +17,7 @@ def bisect(f, a, b, xtol=1e-12, maxiter=50, full_output=False):
         if est_err <= xtol:
             break
     else:  # executed if loop didn't break
-        flag = 'Did not converge to xtol={0}; estimated error {1}'\
-                .format(xtol, est_err)
+        flag = -2  # CONVERR
 
     if full_output:
         r = RootResults(root=mid,
@@ -62,14 +61,13 @@ def newton(f, a0, a1=None, fprime=None, fprime2=None,
         method = NR_iter_gen(a0, f, fprime)
     # TODO: if fprime2 is not None, use Halley's method.
 
-    x, xprev, est_err, f_call = method.next()
+    x, xprev, est_err, f_calls = method.next()
     for iteration in range(maxiter):
-        x, xprev, est_err, f_call = method.next()
+        x, xprev, est_err, f_calls = method.next()
         if est_err <= tol:
             break
     else:  # executed if loop didn't break
-        flag = 'Did not converge to tol={0}; estimated error {1}'\
-                .format(tol, est_err)
+        flag = -2  # CONVERR
 
     if full_output:
         r = RootResults(root=x,

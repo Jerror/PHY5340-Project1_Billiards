@@ -45,13 +45,16 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
     """Billiard methods for 1D continuous differentiable convex boundaries."""
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, domain, tol=2E-12,
-                 rootfind_open=opt.newton, rootfind_bracketing=opt.brentq):
+    def __init__(self, domain, tol=2E-12, maxiter=50,
+                 rootfind_open=opt.newton, rootfind_bracketing=opt.brentq,
+                 param_rootfind='bracketing'):
         # domain is the period of the parameter (assumed cyclic, 0 origin)
         self.domain = domain
         self.tol = tol
+        self.maxiter = maxiter
         self.rf_open = rootfind_open
         self.rf_bracketing = rootfind_bracketing
+        self.param_rootfind = param_rootfind           
 
     @abc.abstractmethod
     def _linear_inter_func_d2(self, v):
@@ -59,23 +62,40 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
         rootfinding methods."""
         raise NotImplementedError('')
 
-    def linear_intersect_cart(self, x0, v):
+    def linear_intersect_cart(self, x0, v, s0=0):
         """If fprime2 is not none, uses Halley's parabolic root finder.
         Otherwise, uses the Newton-Raphson method."""
         return self.rf_open(self._linear_intersect_function(x0, v),
-                            self.domain/2,
+                            s0 + self.domain/2,
                             fprime=self._linear_inter_func_derivative(v),
                             fprime2=self._linear_inter_func_d2(v),
-                            tol=self.tol)
+                            tol=self.tol, maxiter=self.maxiter,
+                            full_output=True)
+        if info.converged:
+            return s % self.domain
+        else:
+            raise RuntimeError(repr(info))
 
     def linear_intersect_param(self, s0, v):
+        if self.param_rootfind == 'bracketing':
+            return self._linear_intersect_param_bracketing(s0, v)
+        elif self.param_rootfind == 'open':
+            return self._linear_intersect_param_open(s0, v)
+        else: raise RuntimeError('')
+ 
+    def _linear_intersect_param_open(self, s0, v):
+        """Using newton's method."""
+        return linear_intersect_cart(self.coords_cart(s0), v, s0=s0) 
+
+    def _linear_intersect_param_bracketing(self, s0, v):
         """Using Brent's method with quadratic interpolation.
         This method searches in a specified interval, so I can exclude s0."""
         x0 = self.coords_cart(s0)
         s, info = self.rf_bracketing(self._linear_intersect_function(x0, v),
-                                     s0 + 0.001*self.domain,
-                                     s0 + 0.999*self.domain,
-                                     xtol=self.tol, full_output=True)
+                                     s0 + 1e-8*self.domain,
+                                     s0 + (1 - 1e-8)*self.domain,
+                                     xtol=self.tol, maxiter=self.maxiter,
+                                     full_output=True)
         if info.converged:
             return s % self.domain
         else:
