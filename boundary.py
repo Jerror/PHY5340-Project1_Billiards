@@ -59,24 +59,29 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
     @abc.abstractmethod
     def _linear_inter_func_d2(self, v):
         """Second derivative of linear intersection function, for second-order
-        rootfinding methods."""
+            rootfinding methods.
+        """
         raise NotImplementedError('')
 
     def linear_intersect_cart(self, x0, v, s0=0):
-        """If fprime2 is not none, uses Halley's parabolic root finder.
-        Otherwise, uses the Newton-Raphson method."""
-        return self.rf_open(self._linear_intersect_function(x0, v),
-                            s0 + self.domain/2,
-                            fprime=self._linear_inter_func_derivative(v),
-                            fprime2=self._linear_inter_func_d2(v),
-                            tol=self.tol, maxiter=self.maxiter,
-                            full_output=True)
-        if info.converged:
-            return s % self.domain
-        else:
-            raise RuntimeError(repr(info))
+        """Find a linear intersection from arbitrary cartesian x0.
+        
+        Default: opt.newton. If fprime2 is not none, uses Halley's parabolic
+         root finder; otherwise, the Newton-Raphson method.
+        Scipy's implementation does not provide return convergence info,
+         unlike mine. For compatibility I'll leave full_output disabled.
+        If s0 is given (presumably x0 is on the boundary) I start the search
+         at the angle opposite, to help avoid finding the previous intersect.
+        """
+        s = self.rf_open(self._linear_intersect_function(x0, v),
+                         s0 + self.domain/2,
+                         fprime=self._linear_inter_func_derivative(v),
+                         fprime2=self._linear_inter_func_d2(v),
+                         tol=self.tol, maxiter=self.maxiter)
+        return s % self.domain
 
     def linear_intersect_param(self, s0, v):
+        """Find a linear intersection from a point s0 on boundary."""
         if self.param_rootfind == 'bracketing':
             return self._linear_intersect_param_bracketing(s0, v)
         elif self.param_rootfind == 'open':
@@ -84,12 +89,18 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
         else: raise RuntimeError('')
  
     def _linear_intersect_param_open(self, s0, v):
-        """Using newton's method."""
-        return linear_intersect_cart(self.coords_cart(s0), v, s0=s0) 
+        """Open methods do not require an interval, and can be faster.
+
+        With an open search domain, it is possible to find the wrong root...
+        Default: opt.newton.
+        """
+        return self.linear_intersect_cart(self.coords_cart(s0), v, s0=s0) 
 
     def _linear_intersect_param_bracketing(self, s0, v):
-        """Using Brent's method with quadratic interpolation.
-        This method searches in a specified interval, so I can exclude s0."""
+        """Bracketing methods search within an interval, so I can exclude s0.
+
+        Default: opt.brentq, Brent's method with quadratic interpolation.
+        """
         x0 = self.coords_cart(s0)
         s, info = self.rf_bracketing(self._linear_intersect_function(x0, v),
                                      s0 + 1e-8*self.domain,
