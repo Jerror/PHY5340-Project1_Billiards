@@ -3,7 +3,7 @@ from scipy.optimize.zeros import RootResults
 # RootResults is a class for representing the results and convergence of
 #  rootfinding methods. I'll use it for compatibility with scipy.optimize.
 
-def bisect(f, a, b, xtol=1e-12, maxiter=50, full_output=False):
+def bisect(f, a, b, xtol=1e-12, maxiter=50, full_output=False, disp=True):
     assert f(a) * f(b) < 0
     flag = 0
     est_err = 1
@@ -18,7 +18,10 @@ def bisect(f, a, b, xtol=1e-12, maxiter=50, full_output=False):
             break
     else:  # executed if loop didn't break
         flag = -2  # CONVERR
-
+        if disp: raise RuntimeError('Failed to converge to tolerance {0}\
+                                     after {1} iterations. Found {2} with\
+                                     estimated error {3}.'
+                                     .format(tol, maxiter, x, est_err))       
     if full_output:
         r = RootResults(root=mid,
                         iterations=iteration+1,
@@ -29,7 +32,7 @@ def bisect(f, a, b, xtol=1e-12, maxiter=50, full_output=False):
 
 
 def newton(f, a0, a1=None, fprime=None, fprime2=None,
-           maxiter=50, tol=1e-8, full_output=False):
+           maxiter=50, tol=1e-8, full_output=False, disp=True):
     flag = 0
     if fprime is None:
         # use secant method
@@ -68,7 +71,10 @@ def newton(f, a0, a1=None, fprime=None, fprime2=None,
             break
     else:  # executed if loop didn't break
         flag = -2  # CONVERR
-
+        if disp: raise RuntimeError('Failed to converge to tolerance {0}\
+                                     after {1} iterations. Found {2} with\
+                                     estimated error {3}.'
+                                     .format(tol, maxiter, x, est_err))
     if full_output:
         r = RootResults(root=x,
                         iterations=iteration+1,
@@ -76,3 +82,4 @@ def newton(f, a0, a1=None, fprime=None, fprime2=None,
                         flag=flag)
         return [x, r]
     return x
+

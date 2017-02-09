@@ -106,7 +106,7 @@ class ContinuousDifferentiableBoundary_abstract(BilliardBoundary_abstract):
                                      s0 + 1e-8*self.domain,
                                      s0 + (1 - 1e-8)*self.domain,
                                      xtol=self.tol, maxiter=self.maxiter,
-                                     full_output=True)
+                                     full_output=True, disp=False)
         if info.converged:
             return s % self.domain
         else:
@@ -119,6 +119,9 @@ class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
     def __init__(self, **kwargs):
         super(UnitCircleBoundary, self).__init__(2*np.pi, **kwargs)
 
+    def __str__(self):
+        return 'Circle Boundary'
+
     def coords_cart(self, s):
         return np.array([np.cos(s), np.sin(s)])
 
@@ -130,7 +133,10 @@ class UnitCircleBoundary(ContinuousDifferentiableBoundary_abstract):
 
 
 class BeanBoundary(ContinuousDifferentiableBoundary_abstract):
-    """Shape defined by r(s) = 1 + a*cos(c*s) + b*sin(d*s)"""
+    """Shape defined by r(s) = 1 + a*cos(c*s) + b*sin(d*s)
+
+    I have lots of instance variables, so I'll type 'o' for 'self'.
+    """
 
     def __init__(o, a, b, c, d, **kwargs):
         super(BeanBoundary, o).__init__(2*np.pi, **kwargs)
@@ -138,6 +144,9 @@ class BeanBoundary(ContinuousDifferentiableBoundary_abstract):
         o.b = b
         o.c = c
         o.d = d
+
+    def __str__(o):
+        return 'Bean Boundary'
 
     def coord_polar(o, s):
         return 1 + o.a * np.cos(o.c * s) + o.b * np.sin(o.d * s)
